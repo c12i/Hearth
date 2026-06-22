@@ -87,6 +87,54 @@ const statusColors = {
   pending: 'rgba(255,180,80,1)',
 };
 
+// Zone states for the indicator
+const zoneStates = {
+  safe: {
+    label: 'Safe zone — no threats detected',
+    dot: '#4ADE80',
+    dotShadow: 'rgba(74,222,128,0.9)',
+    bg: 'rgba(74,222,128,0.12)',
+    border: 'rgba(74,222,128,0.35)',
+    devices: [],
+  },
+  caution: {
+    label: 'Caution — unusual activity detected',
+    dot: '#FBBF24',
+    dotShadow: 'rgba(251,191,36,0.9)',
+    bg: 'rgba(251,191,36,0.12)',
+    border: 'rgba(251,191,36,0.35)',
+    panelTitle: 'Devices sending excess data',
+    panelTitleColor: '#FBBF24',
+    panelBg: 'rgba(251,191,36,0.1)',
+    panelBorder: 'rgba(251,191,36,0.35)',
+    descColor: 'rgba(251,191,36,0.9)',
+    btnBg: 'rgba(251,191,36,0.8)',
+    btnLabel: 'Limit data',
+    devices: [
+      { icon: 'ti-camera', name: 'Ring camera', desc: 'Sending more data than expected' },
+      { icon: 'ti-device-speaker', name: 'Alexa speaker', desc: 'Unusual voice data uploads' },
+    ],
+  },
+  risk: {
+    label: 'Risk — devices may be compromised',
+    dot: '#EF4444',
+    dotShadow: 'rgba(239,68,68,0.9)',
+    bg: 'rgba(239,68,68,0.12)',
+    border: 'rgba(239,68,68,0.4)',
+    panelTitle: 'Suspicious devices detected',
+    panelTitleColor: '#EF4444',
+    panelBg: 'rgba(239,68,68,0.1)',
+    panelBorder: 'rgba(239,68,68,0.4)',
+    descColor: 'rgba(255,100,100,0.9)',
+    btnBg: 'rgba(239,68,68,0.85)',
+    btnLabel: 'Shut down',
+    devices: [
+      { icon: 'ti-camera', name: 'Ring camera', desc: 'Sending live footage externally' },
+      { icon: 'ti-vacuum-cleaner', name: 'Robot vacuum', desc: 'Mapping data being intercepted' },
+    ],
+  },
+};
+
 function CategoryTag({ category }) {
   const cat = categories[category];
   if (!cat) return null;
@@ -110,6 +158,56 @@ function GlassCard({ children, style = {}, onClick }) {
   return (
     <div className="glass-card" style={style} onClick={onClick}>
       {children}
+    </div>
+  );
+}
+
+function ZoneIndicator({ zone, onZoneAction }) {
+  const state = zoneStates[zone];
+  const hasDevices = state.devices.length > 0;
+
+  return (
+    <div style={{ marginBottom: '10px' }}>
+      <div
+        className="zone-indicator"
+        style={{ background: state.bg, border: `0.5px solid ${state.border}` }}
+      >
+        <div
+          className="zone-dot"
+          style={{ background: state.dot, boxShadow: `0 0 6px ${state.dotShadow}` }}
+        ></div>
+        <span className="zone-label" style={{ color: state.dot }}>{state.label}</span>
+      </div>
+
+      {hasDevices && (
+        <div
+          className="zone-panel"
+          style={{ background: state.panelBg, border: `0.5px solid ${state.panelBorder}` }}
+        >
+          <p className="zone-panel-title" style={{ color: state.panelTitleColor }}>
+            <i className={zone === 'risk' ? 'ti ti-alert-triangle' : 'ti ti-alert-circle'} aria-hidden="true"></i>
+            {state.panelTitle}
+          </p>
+          {state.devices.map((device, i) => (
+            <div key={i} className="zone-device-row">
+              <div className="glass-icon small">
+                <i className={`ti ${device.icon}`} aria-hidden="true"></i>
+              </div>
+              <div className="zone-device-info">
+                <p className="zone-device-name">{device.name}</p>
+                <p className="zone-device-desc" style={{ color: state.descColor }}>{device.desc}</p>
+              </div>
+              <button
+                className="zone-action-btn"
+                style={{ background: state.btnBg }}
+                onClick={() => onZoneAction(device.name, state.btnLabel)}
+              >
+                {state.btnLabel}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -332,6 +430,8 @@ function App() {
   const [aiContext, setAiContext] = useState(null);
   const [deviceToggles, setDeviceToggles] = useState(Object.fromEntries(devices.map(d => [d.id, true])));
   const [categorySettings, setCategorySettings] = useState({ security: 'auto', health: 'ask', behaviour: 'ask', analytics: 'block', system: 'auto' });
+  const [currentZone, setCurrentZone] = useState('safe');
+  const [zoneActionMsg, setZoneActionMsg] = useState(null);
 
   function toggleSection(s) { setExpandedSection(expandedSection === s ? null : s); }
   function toggleDevice(id) { setDeviceToggles(prev => ({ ...prev, [id]: !prev[id] })); }
@@ -356,6 +456,11 @@ function App() {
     setCurrentScreen('agent');
   }
 
+  function handleZoneAction(deviceName, action) {
+    setZoneActionMsg(`${deviceName}: ${action} applied`);
+    setTimeout(() => setZoneActionMsg(null), 3000);
+  }
+
   const filteredAuditItems = auditFilter === 'all' ? auditItems : auditItems.filter(i => i.status === auditFilter);
   const groupedAuditItems = filteredAuditItems.reduce((groups, item) => {
     if (!groups[item.date]) groups[item.date] = [];
@@ -376,6 +481,36 @@ function App() {
           <div className="greeting-block">
             <p className="greeting-sub">Good evening</p>
             <h1 className="greeting-name">Charity</h1>
+          </div>
+
+          <ZoneIndicator zone={currentZone} onZoneAction={handleZoneAction} />
+
+          {zoneActionMsg && (
+            <div style={{ background: 'rgba(100,220,150,0.15)', border: '0.5px solid rgba(100,220,150,0.4)', borderRadius: '10px', padding: '8px 12px', marginBottom: '10px' }}>
+              <p style={{ fontSize: '11px', color: 'rgba(100,220,150,1)', margin: 0 }}>
+                <i className="ti ti-circle-check" style={{ marginRight: '5px' }} aria-hidden="true"></i>
+                {zoneActionMsg}
+              </p>
+            </div>
+          )}
+
+          {/* Zone demo toggle -- for presentation purposes */}
+          <div style={{ display: 'flex', gap: '4px', marginBottom: '10px' }}>
+            {['safe', 'caution', 'risk'].map(z => (
+              <button
+                key={z}
+                onClick={() => setCurrentZone(z)}
+                style={{
+                  flex: 1, padding: '5px 4px', borderRadius: '8px', border: '0.5px solid rgba(255,255,255,0.2)',
+                  background: currentZone === z ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)',
+                  color: currentZone === z ? '#fff' : 'rgba(255,255,255,0.55)',
+                  fontSize: '9px', fontWeight: currentZone === z ? 600 : 400,
+                  cursor: 'pointer', fontFamily: 'inherit', textTransform: 'capitalize',
+                }}
+              >
+                {z}
+              </button>
+            ))}
           </div>
 
           <GlassCard style={{ marginBottom: '10px', cursor: 'pointer' }} onClick={() => setShowDevices(true)}>
@@ -472,7 +607,6 @@ function App() {
 
           {pendingItems.length > 0 ? (
             <>
-              {/* Guide banner -- using a proper button so clicks always register */}
               <button
                 onClick={() => setGuidedMode(true)}
                 style={{
@@ -571,7 +705,6 @@ function App() {
       <div className="app" style={{ backgroundImage: `url(${BG_IMAGE})` }}>
         <div className="content">{renderScreen()}</div>
 
-        {/* Activity popup */}
         {selectedActivity && (
           <div className="modal-scrim" onClick={() => setSelectedActivity(null)}>
             <GlassCard style={{ width: '85%', maxWidth: '340px' }} onClick={e => e.stopPropagation()}>
@@ -587,7 +720,6 @@ function App() {
           </div>
         )}
 
-        {/* Audit bottom sheet */}
         {selectedAuditItem && (
           <div className="modal-scrim" onClick={() => setSelectedAuditItem(null)}>
             <div className="bottom-sheet-glass" onClick={e => e.stopPropagation()}>
@@ -630,7 +762,6 @@ function App() {
           </div>
         )}
 
-        {/* Devices popup */}
         {showDevices && (
           <div className="modal-scrim" onClick={() => setShowDevices(false)}>
             <GlassCard style={{ width: '85%', maxWidth: '340px' }} onClick={e => e.stopPropagation()}>
@@ -650,7 +781,6 @@ function App() {
           </div>
         )}
 
-        {/* Settings drawer */}
         {showSettings && (
           <div className="drawer-scrim" onClick={() => setShowSettings(false)}>
             <div className="drawer-glass" onClick={e => e.stopPropagation()}>
@@ -712,7 +842,6 @@ function App() {
           </div>
         )}
 
-        {/* Floating pill nav */}
         <nav className="floating-nav">
           {navItems.map(item => (
             <button
