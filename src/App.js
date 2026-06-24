@@ -456,9 +456,24 @@ function App() {
     setCurrentScreen('agent');
   }
 
+  const [actedDevices, setActedDevices] = useState([]);
+
   function handleZoneAction(deviceName, action) {
+    const newActed = [...actedDevices, deviceName];
+    setActedDevices(newActed);
     setZoneActionMsg(`${deviceName}: ${action} applied`);
-    setTimeout(() => setZoneActionMsg(null), 3000);
+
+    const totalDevices = zoneStates[currentZone].devices.length;
+    if (newActed.length >= totalDevices) {
+      setTimeout(() => {
+        setCurrentZone('safe');
+        setActedDevices([]);
+        setZoneActionMsg('All threats resolved — zone is now safe');
+        setTimeout(() => setZoneActionMsg(null), 3000);
+      }, 1000);
+    } else {
+      setTimeout(() => setZoneActionMsg(null), 3000);
+    }
   }
 
   const filteredAuditItems = auditFilter === 'all' ? auditItems : auditItems.filter(i => i.status === auditFilter);
@@ -499,7 +514,7 @@ function App() {
             {['safe', 'caution', 'risk'].map(z => (
               <button
                 key={z}
-                onClick={() => setCurrentZone(z)}
+                onClick={() => { setCurrentZone(z); setActedDevices([]); setZoneActionMsg(null); }}
                 style={{
                   flex: 1, padding: '5px 4px', borderRadius: '8px', border: '0.5px solid rgba(255,255,255,0.2)',
                   background: currentZone === z ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)',

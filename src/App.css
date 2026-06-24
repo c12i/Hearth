@@ -720,13 +720,14 @@ body {
 
 /* --- ZONE INDICATOR --- */
 .zone-indicator {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 7px;
   padding: 5px 12px;
   border-radius: 20px;
   margin-bottom: 10px;
   cursor: pointer;
+  width: 100%;
 }
 
 .zone-dot {
@@ -785,8 +786,9 @@ body {
 .zone-action-btn {
   border: none;
   border-radius: 8px;
-  padding: 5px 0;
-  width: 44px;
+  padding: 9px 10px;
+  width: auto;
+  min-width: 44px;
   font-size: 9px;
   font-weight: 600;
   color: #fff;
@@ -794,4 +796,5 @@ body {
   font-family: inherit;
   flex-shrink: 0;
   text-align: center;
+  white-space: nowrap;
 }
