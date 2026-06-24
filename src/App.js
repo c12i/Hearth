@@ -162,9 +162,10 @@ function GlassCard({ children, style = {}, onClick }) {
   );
 }
 
-function ZoneIndicator({ zone, onZoneAction }) {
+function ZoneIndicator({ zone, onZoneAction, dismissedDevices }) {
   const state = zoneStates[zone];
-  const hasDevices = state.devices.length > 0;
+  const visibleDevices = state.devices.filter(d => !dismissedDevices.includes(d.name));
+  const hasDevices = visibleDevices.length > 0;
 
   return (
     <div style={{ marginBottom: '10px' }}>
@@ -188,7 +189,7 @@ function ZoneIndicator({ zone, onZoneAction }) {
             <i className={zone === 'risk' ? 'ti ti-alert-triangle' : 'ti ti-alert-circle'} aria-hidden="true"></i>
             {state.panelTitle}
           </p>
-          {state.devices.map((device, i) => (
+          {visibleDevices.map((device, i) => (
             <div key={i} className="zone-device-row">
               <div className="glass-icon small">
                 <i className={`ti ${device.icon}`} aria-hidden="true"></i>
@@ -470,9 +471,9 @@ function App() {
         setActedDevices([]);
         setZoneActionMsg('All threats resolved — zone is now safe');
         setTimeout(() => setZoneActionMsg(null), 3000);
-      }, 1000);
+      }, 600);
     } else {
-      setTimeout(() => setZoneActionMsg(null), 3000);
+      setTimeout(() => setZoneActionMsg(null), 2000);
     }
   }
 
@@ -498,7 +499,7 @@ function App() {
             <h1 className="greeting-name">Charity</h1>
           </div>
 
-          <ZoneIndicator zone={currentZone} onZoneAction={handleZoneAction} />
+          <ZoneIndicator zone={currentZone} onZoneAction={handleZoneAction} dismissedDevices={actedDevices} />
 
           {zoneActionMsg && (
             <div style={{ background: 'rgba(100,220,150,0.15)', border: '0.5px solid rgba(100,220,150,0.4)', borderRadius: '10px', padding: '8px 12px', marginBottom: '10px' }}>
