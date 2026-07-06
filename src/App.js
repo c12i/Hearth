@@ -603,50 +603,42 @@ function AIAgent({
     setInput("");
     setLoading(true);
     try {
-      const response = await fetch(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.REACT_APP_OPENROUTER_KEY}`,
-          },
-          body: JSON.stringify({
-            model: "openai/gpt-4o-mini",
-            max_tokens: 1024,
-            messages: [
-              {
-                role: "system",
-                content: `You are Hearth AI, a friendly smart home privacy assistant. Help users understand their smart home data in plain, simple language. Be warm, concise and always end with a practical suggestion.
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: "system",
+              content: `You are Hearth AI, a friendly smart home privacy assistant. Help users understand their smart home data in plain, simple language. Be warm, concise and always end with a practical suggestion.
 
 Here is the current state of the user's home, for your reference when answering:
 
 Zone status: ${currentZone}
 
 Devices: ${devices
-                  .map(
-                    (d) =>
-                      `${d.name} (${deviceToggles[d.id] ? "on" : "off"})`,
-                  )
-                  .join(", ")}
+                .map((d) => `${d.name} (${deviceToggles[d.id] ? "on" : "off"})`)
+                .join(", ")}
 
 Category rules: ${categoryRules
-                  .map((c) => `${c.description} -> ${categorySettings[c.key]}`)
-                  .join(", ")}
+                .map((c) => `${c.description} -> ${categorySettings[c.key]}`)
+                .join(", ")}
 
-Pending queue (${pendingItems.length}): ${pendingItems
-                  .map((i) => `${i.device}: ${i.description}`)
-                  .join(" | ") || "none"}
+Pending queue (${pendingItems.length}): ${
+                pendingItems.map((i) => `${i.device}: ${i.description}`).join(" | ") ||
+                "none"
+              }
 
 Recent audit history: ${auditItems
-                  .map((i) => `${i.device} - ${i.summary} (${i.decision})`)
-                  .join(" | ")}`,
-              },
-              ...newMessages.map((m) => ({ role: m.role, content: m.content })),
-            ],
-          }),
-        },
-      );
+                .map((i) => `${i.device} - ${i.summary} (${i.decision})`)
+                .join(" | ")}`,
+            },
+            ...newMessages.map((m) => ({ role: m.role, content: m.content })),
+          ],
+        }),
+      });
       const data = await response.json();
       if (!response.ok || !data.choices) {
         throw new Error(data.error?.message || "Request failed");
