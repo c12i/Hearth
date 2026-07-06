@@ -576,7 +576,14 @@ function GuidedReview({ items, onComplete, onBack }) {
   );
 }
 
-function AIAgent({ initialContext, onBack }) {
+function AIAgent({
+  initialContext,
+  onBack,
+  deviceToggles,
+  categorySettings,
+  currentZone,
+  pendingItems,
+}) {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
@@ -610,7 +617,30 @@ function AIAgent({ initialContext, onBack }) {
             messages: [
               {
                 role: "system",
-                content: `You are Hearth AI, a friendly smart home privacy assistant. Help users understand their smart home data in plain, simple language. Be warm, concise and always end with a practical suggestion.`,
+                content: `You are Hearth AI, a friendly smart home privacy assistant. Help users understand their smart home data in plain, simple language. Be warm, concise and always end with a practical suggestion.
+
+Here is the current state of the user's home, for your reference when answering:
+
+Zone status: ${currentZone}
+
+Devices: ${devices
+                  .map(
+                    (d) =>
+                      `${d.name} (${deviceToggles[d.id] ? "on" : "off"})`,
+                  )
+                  .join(", ")}
+
+Category rules: ${categoryRules
+                  .map((c) => `${c.description} -> ${categorySettings[c.key]}`)
+                  .join(", ")}
+
+Pending queue (${pendingItems.length}): ${pendingItems
+                  .map((i) => `${i.device}: ${i.description}`)
+                  .join(" | ") || "none"}
+
+Recent audit history: ${auditItems
+                  .map((i) => `${i.device} - ${i.summary} (${i.decision})`)
+                  .join(" | ")}`,
               },
               ...newMessages.map((m) => ({ role: m.role, content: m.content })),
             ],
@@ -1119,6 +1149,10 @@ function App() {
       return (
         <AIAgent
           initialContext={aiContext}
+          deviceToggles={deviceToggles}
+          categorySettings={categorySettings}
+          currentZone={currentZone}
+          pendingItems={pendingItems}
           onBack={
             aiContext
               ? () => {
